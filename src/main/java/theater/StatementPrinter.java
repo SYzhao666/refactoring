@@ -8,6 +8,9 @@ import java.util.Map;
  * This class generates a statement for a given invoice of performances.
  */
 public class StatementPrinter {
+    private static final String TRAGEDY = "tragedy";
+    private static final String COMEDY = "comedy";
+
     private final Invoice invoice;
     private final Map<String, Play> plays;
 
@@ -41,12 +44,8 @@ public class StatementPrinter {
         for (Performance performance : invoice.getPerformances()) {
             final Play play = plays.get(performance.getPlayID());
 
-            // add volume credits
-            volumeCredits += Math.max(performance.getAudience() - Constants.BASE_VOLUME_CREDIT_THRESHOLD, 0);
-            // add extra credit for every five comedy attendees
-            if ("comedy".equals(play.getType())) {
-                volumeCredits += performance.getAudience() / Constants.COMEDY_EXTRA_VOLUME_FACTOR;
-            }
+            // get volume credits
+            volumeCredits += getVolumeCredits(performance);
 
             // print line for this order
             result.append(
@@ -83,7 +82,7 @@ public class StatementPrinter {
         int amount;
 
         switch (play.getType()) {
-            case "tragedy":
+            case TRAGEDY:
                 amount = Constants.TRAGEDY_BASE_AMOUNT;
                 if (performance.getAudience() > Constants.TRAGEDY_AUDIENCE_THRESHOLD) {
                     amount += Constants.TRAGEDY_OVER_BASE_CAPACITY_PER_PERSON
@@ -91,7 +90,7 @@ public class StatementPrinter {
                             - Constants.TRAGEDY_AUDIENCE_THRESHOLD);
                 }
                 break;
-            case "comedy":
+            case COMEDY:
                 amount = Constants.COMEDY_BASE_AMOUNT;
                 if (performance.getAudience() > Constants.COMEDY_AUDIENCE_THRESHOLD) {
                     amount += Constants.COMEDY_OVER_BASE_CAPACITY_AMOUNT
@@ -107,6 +106,26 @@ public class StatementPrinter {
         }
 
         return amount;
+    }
+
+    /**
+     * Computes the volume credits earned from a single performance.
+     *
+     * @param performance the performance whose volume credits are being calculated
+     * @return the volume credits for this performance
+     */
+    private int getVolumeCredits(Performance performance) {
+        int result = 0;
+
+        result += Math.max(
+                performance.getAudience() - Constants.BASE_VOLUME_CREDIT_THRESHOLD, 0
+        );
+
+        if (COMEDY.equals(getPlay(performance).getType())) {
+            result += performance.getAudience() / Constants.COMEDY_EXTRA_VOLUME_FACTOR;
+        }
+
+        return result;
     }
 
 }
